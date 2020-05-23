@@ -5,7 +5,7 @@ fileSuffix=['py','Py','pY','PY']
 
 def walk_through(dirname):	#遍历指定目录下所有文件
 	result = []#所有的文件
-	for maindir, subdir, file_name_list in os.walk(dirname):
+	for maindir, subdir, file_name_list in os.walk(dirname,topdown=False):  #topdown控制遍历当前目录(True)还是子目录
 		#print("1:",maindir) #当前主目录
 		#print("2:",subdir) #当前主目录下的所有目录
 		#print("3:",file_name_list)	#当前主目录下的所有文件
@@ -54,6 +54,7 @@ def output_to_csv(result_matrix,files_path_info,save_filepath):
 			else:
 				slash_index=filepath.rfind('/')
 			outfile.write(filepath[slash_index+1:filepath.rfind('.')]+',')
+			#outfile.write(filepath+',')
 		outfile.write('\n')
 		for single_file_result in result_matrix:
 			if files_path_info[row].rfind('\\')>files_path_info[row].rfind('/'):
@@ -61,6 +62,7 @@ def output_to_csv(result_matrix,files_path_info,save_filepath):
 			else:
 				slash_index=files_path_info[row].rfind('/')
 			outfile.write(files_path_info[row][slash_index+1:files_path_info[row].rfind('.')]+',')
+			#outfile.write(filepath+',')
 			for single_result in single_file_result:
 				if column==row:
 					outfile.write(',')

@@ -96,18 +96,25 @@ class Word_Analyser:
 							self.temp_string=''
 						else:
 							end+=1
-					elif line[end] in ['~' , '^' , '|' , '&','@']:
+					elif line[end] in ['~' , '^' , '|' , '&','@',',',':']:
 						self.trans_string(line[end],self.TRANS_TYPE_SYMBLE)
 						self.temp_string=''
 						start=end=end+1  #凑词结束（用对应符号码替换）
-					elif line[end]=='*':
-						if end+1<len(line) and line[end+1]=='*':
-							if self.temp_string=='**':
-								self.trans_string(self.temp_string+line[end+1],self.TRANS_TYPE_SYMBLE)
-								self.temp_string=''
+					elif line[end] in ['*','/']:
+						if end+1<len(line) and line[end+1]==line[end]:
+							if self.temp_string==2*line[end]:
+								self.trans_string(self.temp_string,self.TRANS_TYPE_SYMBLE)
+								self.temp_string=line[end+1]
 								start=end=end+2
-							else:
-								end+=1
+							elif self.temp_string==line[end]:
+								if end+2<len(line) and line[end+2]=='=':
+									self.trans_string(self.temp_string+line[end+1:end+3],self.TRANS_TYPE_SYMBLE)
+									self.temp_string=''
+									start=end=end+3
+								else:
+									self.trans_string(self.temp_string+line[end+1],self.TRANS_TYPE_SYMBLE)
+									self.temp_string=''
+									start=end=end+2
 						elif end+1<len(line) and line[end+1]=='=':
 							self.trans_string(self.temp_string+line[end+1],self.TRANS_TYPE_SYMBLE)
 							self.temp_string=''
@@ -116,23 +123,6 @@ class Word_Analyser:
 							self.trans_string(self.temp_string,self.TRANS_TYPE_SYMBLE)
 							self.temp_string=''
 							start=end=end+1  #凑词结束（用对应符号码替换）
-					elif line[end]=='/':
-						if end+1<len(line) and line[end+1]=='/':
-							if self.temp_string=='//':
-								self.trans_string(self.temp_string+line[end+1],self.TRANS_TYPE_SYMBLE)
-								self.temp_string=''
-								start=end=end+2
-							else:
-								end+=1
-						elif end+1<len(line) and line[end+1]=='=':
-							self.trans_string(self.temp_string+line[end+1],self.TRANS_TYPE_SYMBLE)
-							self.temp_string=''
-							start=end=end+2
-						else:
-							self.trans_string(self.temp_string,self.TRANS_TYPE_SYMBLE)
-							self.temp_string=''
-							start=end=end+1  #凑词结束（用对应符号码替换）
-					
 					elif line[end] in ['+' , '-' , '%']:
 						if end+1<len(line) and line[end+1]=='=':
 							self.trans_string(self.temp_string+line[end+1],self.TRANS_TYPE_SYMBLE)
@@ -194,10 +184,6 @@ class Word_Analyser:
 							self.trans_string(self.temp_string,self.TRANS_TYPE_SYMBLE)
 							self.temp_string=''
 							start=end=end+1
-					elif line[end]==','or line[end]==':':
-						self.trans_string(self.temp_string,self.TRANS_TYPE_SYMBLE)
-						self.temp_string=''
-						start=end=end+1
 					elif line[end]=='#':
 						self.temp_string=line[end+1:]
 						self.trans_string(self.temp_string,self.TRANS_TYPE_ANO)
@@ -227,7 +213,7 @@ class Word_Analyser:
 								self.trans_string(self.temp_string,self.TRANS_TYPE_STRING)
 								self.temp_string=line[end]  #不重置tempstring会导致符号转换500错误
 								self.trans_string(line[end],self.TRANS_TYPE_SYMBLE)
-								self.par_status=self.QUOTE_NOT_IN_PAIR
+								#self.par_status=self.QUOTE_NOT_IN_PAIR
 								start=end=end+1
 							self.temp_string=''
 					elif self.is_single_letter(line[end])==True or line[end]=='_':
@@ -331,6 +317,10 @@ class Word_Analyser:
 						self.analyse_status=error_definition['LEXICAL_ANALYSIS_INVALID_CHAR']
 						#print('变量名称出现非法字符')
 						break
+				if self.is_single_letter(untrans_str[0])==False and untrans_str[0]!='_':
+					code=str(ERROR_CODE)+TYPE_CODE['err']
+					self.analyse_status=error_definition['LEXICAL_ANALYSIS_INVALID_VARIABLE_NAME']
+					#print('变量名称不合法')
 				if untrans_str in self.var_list:
 					code=str(self.var_list.index(untrans_str)+VAR_CODE+1)+TYPE_CODE['var']  #这里的查重从语义角度有误，因为无法区分全局和局部变量
 				else:
@@ -421,15 +411,16 @@ class Word_Analyser:
 			else:
 				if complex_result['is_complex']==True:
 					valid_result=complex_result
-					succeed=True
 				else:
 					valid_result={}
-					succeed=False
 		if len(valid_result)!=0:
-			succeed=True
-			#new_end=new_end+valid_result['move']
 			new_end=digit_start+valid_result['move']-1
-			self.trans_string(valid_result['data'],valid_result['type'])
+			if new_end+1<len(line) and self.is_single_letter(line[new_end+1])==True:
+				succeed=False
+				new_end=end
+			else:
+				succeed=True
+				self.trans_string(valid_result['data'],valid_result['type'])
 		else:
 			new_end=end
 		return {'success_flag':succeed,'end':new_end}

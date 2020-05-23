@@ -1,3 +1,4 @@
+from copy import copy
 from basic_info import str_comp_weights
 
 #从str1的第一个字符开始寻找在str2中的位置，然后看下一个字符是否相同直至不一致为止，最后删除已比较的字符。
@@ -48,7 +49,8 @@ def strComp(str1,str2):
 				str2cpy=strA[i-start:]
 				str1cpy=strB[:start]+strB[i:]
 			i=0
-	return simCount/max(len(str1),len(str2))
+	#return simCount/max(len(str1),len(str2))
+	return simCount/len(str1)  #这样更具双向对比意义
 
 def string_comparison(file_content_1,file_content_2,mode):  #mode 1为函数内部顺序往下对比，2为取函数内容行最大相似值(更激进）
 	splited_content_1=split_block(file_content_1)
@@ -59,6 +61,9 @@ def string_comparison(file_content_1,file_content_2,mode):  #mode 1为函数内�
 	temp_result=[]  #存储逐行比对结果等待取最大值
 	offset=0  #当某部分不存在时将其权重分给其他部分的补偿倍数
 	parts=['import','other']
+	import_line_length_sum=0
+	other_line_length_sum=0
+	single_function_line_length_sum=0
 	for part in parts:
 		for line_1 in splited_content_1[part]:
 			for line_2 in splited_content_2[part]:
@@ -68,25 +73,49 @@ def string_comparison(file_content_1,file_content_2,mode):  #mode 1为函数内�
 					#import_comp_result.append(0)  #当该部分为空时，无结果则不加入
 					pass
 				else:
-					import_comp_result.append(max(temp_result))  #取该行和content2此部分最大相似值加入该部分结果集
+					import_line_length_sum+=len(line_1)
+					import_comp_result.append(max(temp_result)*len(line_1))  #取该行和content2此部分最大相似值*该行长度加入该部分结果集
 			else:
 				if len(temp_result)==0:
 					pass
 					#other_comp_result.append(0)  #同上
 				else:
-					other_comp_result.append(max(temp_result))  #同上
+					other_line_length_sum+=len(line_1)
+					other_comp_result.append(max(temp_result)*len(line_1))  #同上
 			temp_result=[]
+	if len(import_comp_result)==0:    #暂时各部分取相似度平均值
+		offset+=str_comp_weights['import']
+		import_result=0  #如果该部分没有对比结果，记录补偿倍数（其他部分权重扩大）
+	else:
+		if import_line_length_sum!=0:
+			#import_result=sum(import_comp_result)/len(import_comp_result)*str_comp_weights['import']  #算术平均
+			import_result=sum(import_comp_result)/import_line_length_sum*str_comp_weights['import']  #加权平均
+		else:
+			import_result=0  #有比较结果没有行长度，基本不可能
+	if len(other_comp_result)==0:
+		offset+=str_comp_weights['other']
+		other_result=0
+	else:
+		if other_line_length_sum==0:
+			other_result=sum(other_comp_result)/other_line_length_sum*str_comp_weights['other']
+		else:
+			other_result=0  #有比较结果没有行长度，基本不可能
 	if mode==1:
 		for func_1 in splited_content_1['functions']:
 			temp_result=[]
+			single_function_line_length_sum=0
 			for func_2 in splited_content_2['functions']:
 				func_line_temp_result=[]
 				i=0
 				while i<len(func_1) and i<len(func_2):
-					func_line_temp_result.append(strComp(func_1[i],func_2[i]))
+					func_line_temp_result.append(strComp(func_1[i],func_2[i])*len(func_1[i]))
+					single_function_line_length_sum+=len(func_1[i])
 					i+=1
 				if i!=0:
-					temp_result.append(sum(func_line_temp_result)/i)  #每行相似度取平均值
+					if single_function_line_length_sum!=0:
+						temp_result.append(sum(func_line_temp_result)/single_function_line_length_sum)
+					else:
+						temp_result.append(0)  #函数完全为空，不太可能
 				else:
 					#temp_result.append(0)
 					pass
@@ -95,34 +124,34 @@ def string_comparison(file_content_1,file_content_2,mode):  #mode 1为函数内�
 	elif mode==2:
 		for func_1 in splited_content_1['functions']:
 			temp_result=[]
+			single_function_line_length_sum=0
 			for func_2 in splited_content_2['functions']:
+				#fun_2_content=copy(func_2)
 				func_temp_result=[]
 				for line_1 in func_1:
 					func_line_temp_result=[]
+					#for line_2 in fun_2_content:
 					for line_2 in func_2:
 						func_line_temp_result.append(strComp(line_1,line_2))
-					func_temp_result.append(max(func_line_temp_result))
-				temp_result.append(max(func_temp_result))
+					single_function_line_length_sum+=len(line_1)
+					func_temp_result.append(max(func_line_temp_result)*len(line_1))
+					#fun_2_content.remove(fun_2_content[func_line_temp_result.index(max(func_line_temp_result))])
+					#从func_2副本去除参考样本中已比较的行
+				if single_function_line_length_sum!=0:
+					temp_result.append(sum(func_temp_result)/single_function_line_length_sum)
+				else:
+					temp_result.append(0)  #函数完全为空，不太可能
 			if len(temp_result)!=0:
 				func_comp_result.append(max(temp_result))
 	#return {'import':sum(import_comp_result)/len(import_comp_result),\
 	#	'functions':sum(func_comp_result)/len(func_comp_result),\
 	#	'other':sum(other_comp_result)/len(other_comp_result)}  #暂时各部分取相似度平均值
-	if len(import_comp_result)==0:    #暂时各部分取相似度平均值
-		offset+=str_comp_weights['import']
-		import_result=0  #如果该部分没有对比结果，记录补偿倍数（其他部分权重扩大）
-	else:
-		import_result=sum(import_comp_result)/len(import_comp_result)*str_comp_weights['import']  
 	if len(func_comp_result)==0:
 		offset+=str_comp_weights['func']
 		func_result=0
 	else:
 		func_result=sum(func_comp_result)/len(func_comp_result)*str_comp_weights['func']
-	if len(other_comp_result)==0:
-		offset+=str_comp_weights['other']
-		other_result=0
-	else:
-		other_result=sum(other_comp_result)/len(other_comp_result)*str_comp_weights['other']
+	
 	if offset<1:  #当offset==1时意味所有部分都没有可对比的
 		final_result=(import_result+func_result+other_result)/(1-offset)
 	else:

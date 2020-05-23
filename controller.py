@@ -33,37 +33,60 @@ class Controller:
 		elif len(files)==1:
 			status=error_definition['SOURCE_FILE_NOT_ENOUGH_ERROR']
 		elif status==True:
-			for file_1 in files:
-				single_file_result=[]
-				for file_2 in files:
-					if file_1==file_2:
-						continue
-					else:
-						simplify_res_1=self.simplfier_instance.getSimplyfiedRes(file_1)
-						simplify_res_2=self.simplfier_instance.getSimplyfiedRes(file_2)
-						sim_status_1=simplify_res_1['status']
-						sim_status_2=simplify_res_2['status']
-						if sim_status_1!=True:
-							status=sim_status_1
-							break
-						elif sim_status_2!=True:
-							status=sim_status_2
-							break
+			simplified_content_list=[]
+			for file in files:
+				simplify_res=self.simplfier_instance.getSimplyfiedRes(file)
+				sim_status=simplify_res['status']
+				if sim_status!=True:
+					status=sim_status
+					print('Simplify ERR:'+file)
+					break
+				else:
+					simplified_content_list.append(simplify_res['result'])
+			if status==True and len(simplified_content_list)>1:
+				file_1_index=file_2_index=0
+				for file_content_1 in simplified_content_list:
+					single_file_result=[]
+					file_2_index=0
+					for file_content_2 in simplified_content_list:
+						if file_1_index==file_2_index:
+							file_2_index+=1
+							continue
 						else:
-							file_content1=simplify_res_1['result']
-							file_content2=simplify_res_2['result']
-							temp=comp_method(file_content1,file_content2,custom_args)
+							#simplify_res_1=self.simplfier_instance.getSimplyfiedRes(file_1)
+							#simplify_res_2=self.simplfier_instance.getSimplyfiedRes(file_2)
+							#sim_status_1=simplify_res_1['status']
+							#sim_status_2=simplify_res_2['status']
+							#if sim_status_1!=True:
+							#	status=sim_status_1
+							#	print('Simplify ERR:'+file_1)
+							#	break
+							#elif sim_status_2!=True:
+							#	status=sim_status_2
+							#	print('Simplify ERR:'+file_2)
+							#	break
+							#else:
+								#file_content1=simplify_res_1['result']
+								#file_content2=simplify_res_2['result']
+							temp=comp_method(file_content_1,file_content_2,custom_args)
 							if temp['status']==True:
 								single_file_result.append(temp['result'])
 								status=True
+								file_2_index+=1
 							else:
+								print('Error Related Files:\n'+files[file_1_index]+'\n'+files[file_2_index])
 								status=temp['status']
 								break
-				if status==True:
-					comp_result.append(single_file_result)
-					status=True
-				else:
-					break
+					if status==True:
+						comp_result.append(single_file_result)
+						status=True
+						file_1_index+=1
+					else:
+						break
+			elif status==True:
+				status=error_definition['SOURCE_FILE_NOT_ENOUGH_ERROR']
+			else:
+				pass
 		return {'status':status,'result':comp_result,'file_list':files}
 
 	def read_file_proxy(self,filepath):

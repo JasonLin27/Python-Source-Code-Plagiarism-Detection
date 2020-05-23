@@ -61,7 +61,12 @@ def properties_comp(file_content_1,file_content_2,weight):  #将寻找到的特�
 		status=True
 		#return {'status':status,'result':final_result}
 	else:
-		status=ana_result_1['status']
+		if ana_result_1['status']==False:
+			#print('Lexical ERR: Content 1')
+			status=ana_result_1['status']
+		else:
+			#print('Lexical ERR: Content 2')
+			status=ana_result_2['status']
 		final_result=-1
 		#print("对比的文件词法分析失败")
 	return {'status':status,'result':final_result}
