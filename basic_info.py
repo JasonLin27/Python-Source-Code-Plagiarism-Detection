@@ -102,6 +102,7 @@ error_definition={
 	'LEXICAL_ANALYSIS_INCONSISTENT_TAB':713,
 	'LEXICAL_ANALYSIS_QUOTE_NOT_IN_PAIR':714,
 	'LEXICAL_ANALYSIS_INVALID_VARIABLE_NAME':715,
+	'LEXICAL_ANALYSIS_BRACKET_NOT_IN_PAIR':716,
 	}
 
 error_info={
@@ -120,4 +121,5 @@ error_info={
 	713:'词法分析失败：缩进空格未对齐(4空格为1缩进)',
 	714:'词法分析失败：引号未配对',
 	715:'词法分析失败：非法变量名',
+	716:'词法分析失败：括号未配对',
 	}

@@ -249,7 +249,10 @@ class Word_Analyser:
 				break
 			elif len(self.line_trans_content)>0 and self.status==0 and self.par_status==self.QUOTE_NOT_IN_PAIR:
 				self.trans_content.append([tab_level,self.line_trans_content])
-			
+		if self.status!=0:
+			self.analyse_status=error_definition['LEXICAL_ANALYSIS_BRACKET_NOT_IN_PAIR']
+		elif self.par_status!=self.QUOTE_NOT_IN_PAIR:
+			self.analyse_status=error_definition['LEXICAL_ANALYSIS_QUOTE_NOT_IN_PAIR']
 
 	def trans_string(self,untrans_str,type):  #转换字符串untrans_str为码并与transed_str结合
 		#flag=False
